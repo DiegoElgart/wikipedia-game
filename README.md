@@ -1,11 +1,11 @@
-#wikipedia-game
+# wikipedia-game
 A game project by @msemrik and @DiegoElgart
 
 
 
-###First time running in this repo? Don't worry, follow these steps:
+### First time running in this repo? Don't worry, follow these steps:
 
-####SERVER
+#### SERVER
 1. move to "server" folder: `cd server`
 2. Install npm dependencies: `npm install`
 3. Build the project (convert ts into js, run code cleaning tools): `npm run build`
