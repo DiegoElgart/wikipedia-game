@@ -2,5 +2,6 @@
 server/dist
 server/node_modules
 server/package-lock.json
+server/.env.secret
 package-lock.json
 server/application.log

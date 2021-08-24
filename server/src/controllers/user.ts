@@ -1,5 +1,5 @@
 import passport from "passport";
-import {User} from "../domain/User";
+import {UserDocument} from "../domain/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { body, check, validationResult } from "express-validator";
@@ -21,10 +21,15 @@ export const postLogin = async (req: Request, res: Response, next: NextFunction)
         res.status(500).send(errors);
     }
 
-    passport.authenticate("local", (err: Error, user: User, info: IVerifyOptions) => {
+    passport.authenticate("local", (err: Error, user: UserDocument, info: IVerifyOptions) => {
         if (err) { return next(err); }
         if (!user) {
-            res.status(404).send();
+            if(info != null) {
+                res.status(500).send(info.message);
+            } else {
+                res.status(404).send();
+            }
+
         } else {
             req.logIn(user, (err) => {
                 if (err) { return next(err); }

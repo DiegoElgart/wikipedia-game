@@ -1,8 +1,11 @@
-import express from "express";
-import compression from "compression";  // compresses requests
-import session from "express-session";
-import {SESSION_SECRET} from "./util/secrets";
 import bodyParser from "body-parser";
+import compression from "compression";  // compresses requests
+import express from "express";
+import session from "express-session";
+import {SESSION_SECRET, MONGODB_URI} from "./util/secrets";
+import MongoStore from "connect-mongo";
+import mongoose from "mongoose";
+import bluebird from "bluebird";
 import passport from "passport";
 
 // API keys and Passport configuration
@@ -10,6 +13,17 @@ import * as passportConfig from "./config/passport";
 
 // Create Express server
 const app = express();
+
+// Connect to MongoDB
+const mongoUrl = MONGODB_URI;
+mongoose.Promise = bluebird;
+mongoose.connect(mongoUrl, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        useCreateIndex: true,   })
+    .then(() => console.log("Database connected!"))
+    .catch(err => console.log(err));
+
 
 // Express configuration
 app.set("port", process.env.port || 3000);
@@ -20,6 +34,12 @@ app.use(session({
     resave: true,
     saveUninitialized: true,
     secret: SESSION_SECRET,
+    store: new MongoStore({
+        mongoUrl,
+        mongoOptions: {
+            useUnifiedTopology: true
+        }
+    })
 }));
 app.use(passport.initialize());
 app.use(passport.session());

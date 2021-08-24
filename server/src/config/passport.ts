@@ -1,7 +1,8 @@
 import passport from "passport";
 import passportLocal from "passport-local";
-import {User} from "../domain/User";
-import { Request, Response, NextFunction } from "express";
+import {User, UserDocument} from "../domain/User";
+import {Request, Response, NextFunction} from "express";
+import {NativeError} from "mongoose";
 
 const LocalStrategy = passportLocal.Strategy;
 
@@ -10,29 +11,45 @@ passport.serializeUser<any, any>((req, user, done) => {
 });
 
 passport.deserializeUser((id, done) => {
-    const user = id as User;
-    //TODO this should go to get the User from the DB
-    if(user.id === 1) {
-        done(undefined, new User("Matias",1));
-    } else if(user.id === 2) {
-        done(undefined, new User("Diego", 2));
-    } else {
-        return done("user not identified");
-    }
+    User.findById(id, (err: NativeError, user: UserDocument) => done(err, user));
 });
 
 /**
  * Sign in using Email and Password.
  */
-passport.use(new LocalStrategy({ usernameField: "email" }, (email, password, done) => {
-    //TODO this should look for the user and matching password in the db
-    if(email.toLowerCase() === "msemrik@gmail.com" && password === "msemrik") {
-        return done(undefined, new User("Matias", 1));
-    } else if(email.toLowerCase() === "diego@gmail.com" && password === "diego") {
-        return done(undefined, new User("Diego", 2));
-    } else {
-        return done(undefined, false, { message: `Email ${email} not found.` });
-    }
+passport.use(new LocalStrategy({usernameField: "email"}, (email, password, done) => {
+    User.findOne({email: email.toLowerCase()}, (err: NativeError, user: UserDocument) => {
+        if (err) {
+            return done(err);
+        }
+
+        if (!user) {
+            // HARDCODED CODE FOR CREATING NEW USERS
+            // if (email.toLowerCase() === "diego@gmail.com") {
+            //     const user = new User({
+            //         email: "diego@gmail.com",
+            //         password: "diego"
+            //     });
+            //     user.save((err) => {
+            //         if (err) {
+            //             console.log("error");
+            //         }
+            //     });
+            // } else {
+                return done(undefined, false, {message: `Email ${email} not found.`});
+            // }
+        } else {
+            user.comparePassword(password, (err: Error, isMatch: boolean) => {
+                if (err) {
+                    return done(err);
+                }
+                if (isMatch) {
+                    return done(undefined, user);
+                }
+                return done(undefined, false, {message: "Invalid email or password."});
+            });
+        }
+    });
 }));
 
 /**
