@@ -26,7 +26,7 @@ Hardocded users:
 This will return a cookie (something like: connect.sid=examplesid) you should include when calling any authenticated-required API.
 i.e:
 
-`curl -X POST -i localhost:4000/game/start -H "Content-Type: application/json" -d '{"language":"en"}' -H "Cookie: connect.sid=s%3AZZ8hk69JVl8fnrYMwtYBhLgWZSu2q_58.8ySaSgpswDmv4Cz2cmFZV9okW%2BwZYaTIdcGQcRZXf4Q"`
+`curl -X POST -i localhost:4000/game/start -H "Content-Type: application/json" -d '{"language":"en", "gameType":"2"}' -H "Cookie: connect.sid=s%3AZZ8hk69JVl8fnrYMwtYBhLgWZSu2q_58.8ySaSgpswDmv4Cz2cmFZV9okW%2BwZYaTIdcGQcRZXf4Q"`
 
 ######Want to DEBUG?
 1. Builds the server code, and start it in debug mode: `npm run debug`
