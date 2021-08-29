@@ -7,9 +7,10 @@ A game project by @msemrik and @DiegoElgart
 
 #### SERVER
 1. move to "server" folder: `cd server`
-2. Install npm dependencies: `npm install`
-3. Build the project (convert ts into js, run code cleaning tools, etc): `npm run build`
-4. Start the server: `npm start`
+2. In this folder create file: .env.secret with property MONGO_DB_PASSWORD=[HERE GOES THE PASSWORD] (ask password privately)
+3. Install npm dependencies: `npm install`
+4. Build the project (convert ts into js, run code cleaning tools, etc): `npm run build`
+5. Start the server: `npm start`
 
 You can check if it's working heading to http://localhost:4000 in your browser.
 
