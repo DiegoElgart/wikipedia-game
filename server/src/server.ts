@@ -1,6 +1,8 @@
 import errorHandler from "errorhandler";
-import app from "./app";
+import {App} from "./modules/configuration/App";
 
+// Initialize app
+const app = new App().app;
 
 /**
  * Error Handler. Provides full stack
