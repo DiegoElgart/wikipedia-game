@@ -1,8 +1,10 @@
+// TODO convert into classES (split database logic and application logic)
 import bcrypt from "bcrypt-nodejs";
 import mongoose from "mongoose";
 
 export type UserDocument = mongoose.Document & {
     email: string;
+    // TODO do not return password
     password: string;
 
     profile: {

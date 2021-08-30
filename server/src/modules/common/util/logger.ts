@@ -1,5 +1,7 @@
 import * as winston from "winston";
 
+// TODO convert into class
+// Add context (class, request?) to every log
 const options: winston.LoggerOptions = {
     transports: [
         new winston.transports.Console({
