@@ -1,6 +1,8 @@
 import {Secrets} from "../common/util/Secrets";
 import mongoose from "mongoose";
 import bluebird from "bluebird";
+import {Logger} from "../common/util/Logger";
+import {LogLevels} from "../common/util/LogLevels";
 
 export class Mongo {
     mongoUrl: string;
@@ -12,7 +14,7 @@ export class Mongo {
             useUnifiedTopology: true,
             useCreateIndex: true,
         })
-            .then(() => console.log("Database connected!"))
-            .catch(err => console.log(err));
+            .then(() => Logger.log(LogLevels.info, "Database connected!"))
+            .catch(err => Logger.log(LogLevels.error, err));
     }
 }

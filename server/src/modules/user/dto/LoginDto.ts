@@ -1,5 +1,5 @@
 import {IsDefined, IsEmail, IsEnum, isString, Matches, MinLength} from "class-validator";
-import {Expose, Transform} from "class-transformer";
+import {Expose} from "class-transformer";
 import {Dto} from "../../common/dto/Dto";
 
 export class LoginDto extends Dto {

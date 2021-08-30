@@ -4,6 +4,8 @@ import {NextArticleDto} from "../dto/NextArticleDto";
 import {Controller} from "../../common/controller/Controller";
 import * as DtoValidator from "../../common/dto/DtoValidator";
 import {PassportConfiguration} from "../../configuration/PassportConfiguration";
+import {LogLevels} from "../../common/util/LogLevels";
+import {Logger} from "../../common/util/Logger";
 
 
 export class GameController extends Controller{
@@ -14,6 +16,7 @@ export class GameController extends Controller{
          */
         app.post("/game/start", [PassportConfiguration.isAuthenticated, this.validateStartGameDto], async (req: Request, res: Response) => {
             const startGameDto : StartGameDto = req.body;
+            Logger.log(LogLevels.info, "start game endpoint successfully reached with dto: " + JSON.stringify(startGameDto));
             res.status(200).send("start game endpoint successfully reached with dto: " + JSON.stringify(startGameDto));
         });
 
@@ -23,6 +26,7 @@ export class GameController extends Controller{
          */
         app.post("/game/next", [PassportConfiguration.isAuthenticated, this.validateNextArticleDto], async (req: Request, res: Response) => {
             const nextArticleDto: NextArticleDto = req.body;
+            Logger.log(LogLevels.info, "next article endpoint reached: " + nextArticleDto.articleId);
             res.status(200).send("next article endpoint reached: " + nextArticleDto.articleId);
         });
     };

@@ -7,6 +7,12 @@ import MongoStore from "connect-mongo";
 import {Controllers} from "./Controllers";
 import {PassportConfiguration} from "./PassportConfiguration";
 import {Mongo} from "./Mongo";
+import errorHandler from "errorhandler";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const uuid = require("node-uuid");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const createNamespace = require("continuation-local-storage").createNamespace;
+const myRequest = createNamespace("my request");
 
 export class App {
     app: Express;
@@ -15,9 +21,23 @@ export class App {
         // Create Express server
         this.app = express();
 
+        // initialize mongo
         const mongo = new Mongo();
 
-        // TODO move express configuration to configuration module
+        // configure express
+        this.configureExpress(mongo.mongoUrl);
+
+        // Configure Passport
+        new PassportConfiguration(this.app);
+
+        // Applications controllers
+        Controllers.initializeEndpoints(this.app);
+
+        this.initializeServer();
+    }
+
+
+    private configureExpress = (mongoUrl: string) => {
         // Express configuration
         this.app.set("port", process.env.port || 3000);
         this.app.use(compression());
@@ -28,37 +48,36 @@ export class App {
             saveUninitialized: true,
             secret: Secrets.getInstance().SESSION_SECRET,
             store: new MongoStore({
-                mongoUrl: mongo.mongoUrl,
+                mongoUrl: mongoUrl,
                 mongoOptions: {
                     useUnifiedTopology: true
                 }
             })
         }));
 
-        // Configure Passport
-        new PassportConfiguration(this.app);
-
-        // TODO is all this required? Move to configuration module
+        // Configure to set requestId
         this.app.use((req, res, next) => {
-            res.locals.user = req.user;
-            next();
-        });
-        this.app.use((req, res, next) => {
-            // After successful login, redirect back to the intended page
-            if (!req.user &&
-                req.path !== "/login" &&
-                req.path !== "/signup" &&
-                !req.path.match(/^\/auth/) &&
-                !req.path.match(/\./)) {
-                // req.session.returnTo = req.path;
-            } else if (req.user &&
-                req.path == "/account") {
-                // req.session.returnTo = req.path;
-            }
-            next();
+            myRequest.run(function () {
+                myRequest.set("requestId", uuid.v1());
+                next();
+            });
         });
 
-        // Applications controllers
-        Controllers.initializeEndpoints(this.app);
+        // Configure stacktrace
+        if (process.env.NODE_ENV === "development") {
+            this.app.use(errorHandler());
+        }
+    }
+
+    private initializeServer = () => {
+        // Initialize server
+        this.app.listen(this.app.get("port"), () => {
+            console.log(
+                "  App is running at http://localhost:%d in %s mode",
+                this.app.get("port"),
+                this.app.get("env")
+            );
+            console.log("  Press CTRL-C to stop\n");
+        });
     }
 }
