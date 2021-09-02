@@ -6,18 +6,27 @@ import * as DtoValidator from "../../common/dto/DtoValidator";
 import {PassportConfiguration} from "../../configuration/PassportConfiguration";
 import {LogLevels} from "../../common/util/LogLevels";
 import {Logger} from "../../common/util/Logger";
+import {GameService} from "../service/GameService";
 
 
 export class GameController extends Controller{
+    gameService: GameService;
+
     initializeEndpoints = (app: Express) => {
+        this.gameService = new GameService();
+
         /**
          * Game Controller.
          * @route POST /game/start
          */
         app.post("/game/start", [PassportConfiguration.isAuthenticated, this.validateStartGameDto], async (req: Request, res: Response) => {
             const startGameDto : StartGameDto = req.body;
-            Logger.log(LogLevels.info, "start game endpoint successfully reached with dto: " + JSON.stringify(startGameDto));
-            res.status(200).send("start game endpoint successfully reached with dto: " + JSON.stringify(startGameDto));
+            try {
+                const newGame = await this.gameService.startGame(startGameDto);
+                res.status(200).send("game successfully started. Game: " + newGame);
+            } catch (err) {
+                res.status(500).send("error while creating new game: " + err);
+            }
         });
 
         /**

@@ -3,8 +3,8 @@ import {Request, Response, NextFunction, Express} from "express";
 import bcrypt from "bcrypt-nodejs";
 import passport from "passport";
 import {UserDao} from "../user/dao/UserDao";
-import {UserDocument} from "../user/dao/schemas/UserSchema";
 import {User} from "../user/domain/User";
+import {MongoUser} from "../user/dao/schemas/MongoUser";
 
 export class PassportConfiguration {
     userDao: UserDao;
@@ -14,7 +14,7 @@ export class PassportConfiguration {
 
         const LocalStrategy = passportLocal.Strategy;
 
-        passport.serializeUser<any, any>((req, user : UserDocument, done) => {
+        passport.serializeUser<any, any>((req, user : MongoUser.Document , done) => {
             done(undefined, user);
         });
 
@@ -47,7 +47,7 @@ export class PassportConfiguration {
             } else {
                 const isMatch = await this.validatePassword(user, password);
                 if (isMatch) {
-                    return done(undefined, new User(user));
+                    return done(undefined, MongoUser.getUser(user));
                 } else {
                     return done(undefined, false, {message: "Invalid email or password."});
                 }
@@ -58,7 +58,7 @@ export class PassportConfiguration {
         app.use(passport.session());
     }
 
-    private validatePassword = async (user: UserDocument, password: string) => {
+    private validatePassword = async (user: MongoUser.Document, password: string) => {
         return bcrypt.compareSync(password, user.password);
     }
 

@@ -9,6 +9,7 @@ export class Mongo {
     constructor() {
         this.mongoUrl = Secrets.getInstance().MONGODB_URI;
         mongoose.Promise = bluebird;
+        // mongoose.set("debug", true);
         mongoose.connect(this.mongoUrl, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
