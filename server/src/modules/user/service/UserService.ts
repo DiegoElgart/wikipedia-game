@@ -1,7 +1,8 @@
 import passport from "passport";
 import {IVerifyOptions} from "passport-local";
 import {NextFunction, Request, Response} from "express";
-import {UserDocument} from "../dao/schemas/UserSchema";
+import {MongoUser} from "../dao/schemas/MongoUser";
+import UserDocument = MongoUser.Document;
 
 export class UserService {
     static loginUser = (req: Request, res: Response, next: NextFunction) => {

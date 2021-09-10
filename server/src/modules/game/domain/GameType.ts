@@ -1,5 +1,5 @@
 export enum GameType {
-    DailyChallenge,
-    Random,
-    PlayerChallenge
+    DailyChallenge = 0,
+    Random = 1,
+    PlayerChallenge = 2
 }
