@@ -25,6 +25,7 @@ export class GameController extends Controller{
                 const newGame = await this.gameService.startGame(startGameDto);
                 res.status(200).send("game successfully started. Game: " + newGame);
             } catch (err) {
+                Logger.log(LogLevels.error, err.stack);
                 res.status(500).send("error while creating new game: " + err);
             }
         });
@@ -35,8 +36,12 @@ export class GameController extends Controller{
          */
         app.post("/game/next", [PassportConfiguration.isAuthenticated, this.validateNextArticleDto], async (req: Request, res: Response) => {
             const nextArticleDto: NextArticleDto = req.body;
-            Logger.log(LogLevels.info, "next article endpoint reached: " + nextArticleDto.articleId);
-            res.status(200).send("next article endpoint reached: " + nextArticleDto.articleId);
+            try {
+                const newGame = await this.gameService.nextArticle(nextArticleDto);
+                res.status(200).send("game successfully started. Game: " + newGame);
+            } catch (err) {
+                res.status(500).send("error while creating new game: " + err);
+            }
         });
     };
 
@@ -45,6 +50,7 @@ export class GameController extends Controller{
     }
 
     validateNextArticleDto = (req: Request, res: Response, next: NextFunction) => {
+        req.body.id = req.query.id;
         DtoValidator.validateDto(NextArticleDto, req, res, next);
     }
 }

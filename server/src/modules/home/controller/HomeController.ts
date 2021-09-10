@@ -1,7 +1,6 @@
 import {Express, Request, Response} from "express";
 import {Controller} from "../../common/controller/Controller";
-import {LogLevels} from "../../common/util/LogLevels";
-import {Logger} from "../../common/util/Logger";
+import path from "path";
 
 
 export class HomeController extends Controller{
@@ -11,8 +10,19 @@ export class HomeController extends Controller{
          * @route GET /
          */
         app.get("/", (req: Request, res: Response) => {
-            Logger.log(LogLevels.info, "homecontroller index: A request reached this endpoint");
-            res.status(200).send("You're app is up and running! This will be the home site.");
+            res.sendFile(path.resolve(__dirname+ "../../../../client/main.html"));
+        });
+
+        /**
+         * Login page.
+         * @route GET /login
+         */
+        app.get("/login", (req: Request, res: Response) => {
+            if (req.isAuthenticated()) {
+                res.redirect("/");
+            } else {
+                res.sendFile(path.resolve(__dirname+ "../../../../client/login.html"));
+            }
         });
     };
 }

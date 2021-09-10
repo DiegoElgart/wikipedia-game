@@ -5,7 +5,7 @@ import {MongoUser} from "../dao/schemas/MongoUser";
 import UserDocument = MongoUser.Document;
 
 export class UserService {
-    static loginUser = (req: Request, res: Response, next: NextFunction) => {
+    static loginUser = async (req: Request, res: Response, next: NextFunction) => {
         return passport.authenticate("local", (err: Error, user: UserDocument, info: IVerifyOptions) => {
             if (err) {
                 return next(err);
@@ -23,7 +23,7 @@ export class UserService {
                     if (err) {
                         return next(err);
                     }
-                    res.status(200).send(user);
+                    res.redirect("/");
                 });
             }
         })(req, res, next);

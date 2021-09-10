@@ -1,0 +1,87 @@
+<html>
+<body>
+<script type="text/javascript">
+
+    async function main (){
+        const response = await getUser();
+        if (response.status == 200) {
+            await showUserDetails(response);
+            // await showStartGameButton();
+            await showLogOutButton();
+        } else if (response.status === 403) {
+            redirectToLogIn();
+        } else {
+            await showError(response);
+        }
+    }
+
+    main();
+
+    async function getUser() {
+        return fetch('/user', {
+            credentials: 'include',
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            mode: 'no-cors'
+        });
+    }
+
+    async function showUserDetails(response) {
+        const user = await response.json();
+        const tag = document.createElement("p");
+        const text = document.createTextNode(JSON.stringify(user));
+        tag.appendChild(text);
+        document.getElementsByTagName("body")[0].appendChild(tag);
+    }
+
+    async function showError(response) {
+        const tag = document.createElement("p");
+        const text = document.createTextNode("Error getting user: " + JSON.stringify(response));
+        tag.appendChild(text);
+        document.getElementsByTagName("body")[0].appendChild(tag);
+    }
+
+    async function showLogOutButton() {
+        const button = document.createElement("button");
+        button.textContent = "log out";
+        button.onclick = async () => {
+            await fetch('/logout', {
+                credentials: 'include',
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                mode: 'no-cors'
+            });
+            window.location.replace("/login");
+        };
+        document.getElementsByTagName("body")[0].appendChild(button);
+    }
+
+    // async function showStartGameButton() {
+    //     const button = document.createElement("button");
+    //     button.textContent = "Start Game";
+    //     button.onclick = async () => {
+    //         await fetch('/game/start', {
+    //             credentials: 'include',
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             mode: 'no-cors'
+    //         });
+    //         window.location.replace("/login");
+    //     };
+    //     document.getElementsByTagName("body")[0].appendChild(button);
+    // }
+
+    function redirectToLogIn() {
+        window.location.replace("/login")
+    }
+
+</script>
+<!--<article></article>-->
+</body>
+</html>
