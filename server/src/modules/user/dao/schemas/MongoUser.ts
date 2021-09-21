@@ -1,4 +1,4 @@
-import mongoose, {Document, Model, ObjectId, Schema} from "mongoose";
+import mongoose, {ObjectId} from "mongoose";
 import bcrypt from "bcrypt-nodejs";
 import {User} from "../../domain/User";
 

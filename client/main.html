@@ -1,0 +1,164 @@
+<html>
+<body>
+<script type="text/javascript">
+
+    async function main (){
+        const userResponse = await getUser();
+        if (userResponse.status == 200) {
+            await showUserDetails(userResponse);
+            await showLogOutButton();
+
+            const gameResponse = await getCurrentGame();
+            if (!gameResponse) {
+                await showStartGameButton();
+            } else {
+                try {
+                    const game = await gameResponse.json();
+
+                    await showStats(game);
+                    if (game.status == undefined) {
+                        await showArticle(game);
+                    } else {
+                        await showStartGameButton();
+                        cleanArticle();
+                    }
+                } catch (err) {
+                    await showStartGameButton();
+                }
+            }
+
+        } else if (userResponse.status === 403) {
+            redirectToLogIn();
+        } else {
+            await showError(userResponse);
+        }
+    }
+
+    main();
+
+    async function getUser() {
+        return fetch('/user', {
+            credentials: 'include',
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            mode: 'no-cors'
+        });
+    }
+
+    async function getCurrentGame() {
+        return fetch('/game/status', {
+            credentials: 'include',
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            mode: 'no-cors'
+        });
+    }
+
+    async function showUserDetails(userResponse) {
+        const user = await userResponse.json();
+        const tag = document.createElement("p");
+        const text = document.createTextNode(JSON.stringify(user));
+        tag.appendChild(text);
+        document.getElementsByTagName("user")[0].appendChild(tag);
+    }
+
+    async function showStats(game) {
+        const tag = document.createElement("p");
+        const clonedGame = JSON.parse(JSON.stringify(game));
+        delete clonedGame.currentArticle;
+        const text = document.createTextNode(JSON.stringify(clonedGame));
+        tag.appendChild(text);
+        document.getElementsByTagName("stats")[0].innerHTML = "";
+        document.getElementsByTagName("stats")[0].appendChild(tag);
+    }
+
+    function showArticle(game) {
+        console.log(game.currentArticle);
+        document.getElementsByTagName("article")[0].innerHTML = game.currentArticle;
+    }
+
+    function cleanArticle() {
+        document.getElementsByTagName("article")[0].innerHTML = "";
+    }
+
+    async function showError(response) {
+        const tag = document.createElement("p");
+        const text = document.createTextNode("Error getting user: " + JSON.stringify(response));
+        tag.appendChild(text);
+        document.getElementsByTagName("error")[0].innerHTML = "";
+        document.getElementsByTagName("error")[0].appendChild(tag);
+    }
+
+    async function showLogOutButton() {
+        const button = document.createElement("button");
+        button.textContent = "log out";
+        button.onclick = async () => {
+            await fetch('/logout', {
+                credentials: 'include',
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                mode: 'no-cors'
+            });
+            window.location.replace("/login");
+        };
+        document.getElementsByTagName("user")[0].appendChild(button);
+    }
+
+    async function showStartGameButton() {
+        const button = document.createElement("button");
+        button.textContent = "Start Game";
+        button.onclick = async () => {
+            await fetch('/game/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({"language":"en", "gameType":"3", "finishPreviousGames":true}),
+            }).then(() => window.location.replace("/login"));
+
+        };
+        document.getElementsByTagName("body")[0].appendChild(button);
+    }
+
+    function redirectToLogIn() {
+        window.location.replace("/login")
+    }
+
+    async function callServer(id) {
+        const response = await fetch('http://localhost:4000/game/next?id=' + id, {
+            credentials: 'include',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            mode: 'no-cors'
+        });
+        if (response.status == 200) {
+            const game = await response.json();
+            await showStats(game);
+            if (game.status == undefined) {
+                await showArticle(game);
+            } else {
+                await showStartGameButton();
+                cleanArticle();
+            }
+        } else {
+            await showError("error on call");
+        }
+
+    }
+
+</script>
+<error></error>
+<user></user>
+<stats></stats>
+<article></article>
+</body>
+</html>

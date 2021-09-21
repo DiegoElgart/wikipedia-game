@@ -1,9 +1,10 @@
-import mongoose, {ObjectId, Types} from "mongoose";
+import mongoose from "mongoose";
 import {GameType} from "../../domain/GameType";
 import {GameResult} from "../../domain/GameResult";
 import {User} from "../../../user/domain/User";
 import {MongoUser} from "../../../user/dao/schemas/MongoUser";
 import {Game} from "../../domain/Game";
+import {MongoArticle} from "../../../article/dao/schema/MongoArticle";
 
 export namespace MongoGame {
     export interface Document extends mongoose.Document {
@@ -11,6 +12,9 @@ export namespace MongoGame {
         user: MongoUser.Document
         gameResult: GameResult
         gameType: GameType
+        initialArticle: MongoArticle.Document
+        finalArticle: MongoArticle.Document
+        articles: MongoArticle.Document[]
         createdAt: Date
         endedAt: Date
     }
@@ -20,7 +24,10 @@ export namespace MongoGame {
             user: {type: mongoose.Types.ObjectId, ref: "User"},
             gameType: { type: Number },
             gameResult: { type: Number },
-            endedAt: { type: Date }
+            endedAt: { type: Date },
+            initialArticle: {type: mongoose.Types.ObjectId, ref: "Article"},
+            finalArticle: {type: mongoose.Types.ObjectId, ref: "Article"},
+            articles: [{type: mongoose.Types.ObjectId, ref: "Article"}]
         },
         { timestamps: true }
     );
@@ -35,6 +42,9 @@ export namespace MongoGame {
         const gameResult = gameDocumentObject.gameResult;
         const createdAt = gameDocumentObject.createdAt;
         const endedAt = gameDocumentObject.endedAt;
-        return new Game(id, user, gameType, gameResult, createdAt, endedAt);
+        const initialArticle = gameDocument.initialArticle? MongoArticle.getArticle(gameDocument.initialArticle): undefined;
+        const finalArticle = gameDocument.finalArticle? MongoArticle.getArticle(gameDocument.finalArticle): undefined;
+        const articles = MongoArticle.getArticles(gameDocument.articles);
+        return new Game(id, user, gameType, initialArticle, finalArticle, articles, gameResult, createdAt, endedAt);
     };
 }

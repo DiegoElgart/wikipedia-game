@@ -4,6 +4,7 @@ import {Controller} from "../../common/controller/Controller";
 import * as DtoValidator from "../../common/dto/DtoValidator";
 import {LoginDto} from "../dto/LoginDto";
 import {UserService} from "../service/UserService";
+import {PassportConfiguration} from "../../configuration/PassportConfiguration";
 
 export class UserController extends Controller {
     initializeEndpoints = (app: Express) => {
@@ -12,7 +13,15 @@ export class UserController extends Controller {
          * @route POST /login
          */
         app.post("/login", this.validateLoginDto, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-            UserService.loginUser(req, res, next);
+            await UserService.loginUser(req, res, next);
+        });
+
+        /**
+         * get user.
+         * @route GET /user
+         */
+        app.get("/user", PassportConfiguration.isAuthenticated, async (req: Request, res: Response) => {
+            res.status(200).send(req.user);
         });
 
         /**
