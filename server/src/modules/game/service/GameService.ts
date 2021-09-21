@@ -6,9 +6,11 @@ import {GameResult} from "../domain/GameResult";
 import {GameType} from "../domain/GameType";
 import {ArticleService} from "../../article/service/ArticleService";
 import {NextArticleDto} from "../dto/NextArticleDto";
-import {Article} from "../../article/domain/Article";
 import {LogLevels} from "../../common/util/LogLevels";
 import {Logger} from "../../common/util/Logger";
+import {GameStatus} from "../domain/GameStatus";
+import * as _ from "lodash";
+import {Article} from "../../article/domain/Article";
 
 export class GameService {
     gameDao : GameDao;
@@ -19,38 +21,86 @@ export class GameService {
         this.articleService = new ArticleService();
     }
 
-    startGame = async (startGameDto: StartGameDto) => {
-        await this.checkIfUsersUnfinishedGames(startGameDto.user, startGameDto.finishPreviousGames);
+    // Starts a new game
+    async startGame(startGameDto: StartGameDto) {
+        // finalize previous games if possible
+        await this.validatePreviousGames(startGameDto.user, startGameDto.finishPreviousGames);
 
         const game = startGameDto.getGame();
 
-        // define initial and end article according to game type
+        // According to game type, define initial and final article
         await this.setInitialAndFinalArticle(game);
 
-        await this.gameDao.addGame(game);
+        // Store  created game to database
+        return this.gameDao.add(game);
     }
 
-    nextArticle = async (nextGameDto: NextArticleDto) => {
-        const game = await this.gameDao.findUserOpenGame(nextGameDto.user);
+    // Player clicked a link, update article
+    async next(nextGameDto: NextArticleDto) {
+        // Get Current Game and Article
+        const game = await this.gameDao.getOpenGamesByUser(nextGameDto.user);
+        const article = this.getCurrentArticle(game);
 
-        const currentArticle = this.getCurrentArticle(game);
-        const link = this.getLink(currentArticle, nextGameDto.id);
-        if(!link) {
-            Logger.log(LogLevels.error, `A non-existent link was requested. Articleid: ${currentArticle.id}, Link id: ${nextGameDto.id}, User: ${nextGameDto.user}`);
-            throw new Error("Internal eror.");
+        // Get clicked Link
+        const link = await this.getLink(article, nextGameDto.id);
+
+        // Check if user already won
+        if (link.handle == game.finalArticle.handle) {
+            const finishedGame = await this.gameDao.finishGame(game, GameResult.Succeeded);
+            return finishedGame;
         }
 
-        const article = await this.articleService.getArticleByHandle(link.handle);
+        // Get the clicked article
+        const nextArticle = await this.articleService.getArticleByHandle(link.handle);
 
-        game.articles.push(article);
-        await this.gameDao.updateGame(game, game.articles);
-        console.log(article);
+        // Update game
+        const updatedGame = await this.gameDao.addArticleToGame(game, nextArticle);
+
+        return updatedGame;
     }
 
-    private checkIfUsersUnfinishedGames = async(user: User, finishPreviousGames: boolean) => {
-        const userGames = await this.gameDao.findGamesByUser(user);
+    // Get the status of a game
+    async getGameStatus(game: Game) {
+        let gameDuration;
+        let cleanedHTML;
 
-        const unfinishedGames = this.getUnfinishedGames(userGames);
+        // If unfinished game:  Get currentArticle and calculate game duration
+        // If finished game: Calculate only game duration
+        if (!game.isFinished()) {
+            const currentArticle = game.articles.length > 0 ? game.articles[game.articles.length-1] : game.initialArticle;
+            cleanedHTML = await this.articleService.getCleanedHTML(currentArticle);
+
+            gameDuration = this.milisecondsToHumanReadable(new Date().getTime() - game.createdAt.getTime());
+        } else {
+            gameDuration = this.milisecondsToHumanReadable(game.endedAt.getTime() - game.createdAt.getTime());
+        }
+
+        return new GameStatus(game.id, GameType[game.gameType], GameResult[game.gameResult], game.initialArticle.title, game.finalArticle.title, cleanedHTML, game.articles.length, gameDuration);
+    }
+
+    // Get the current player's game
+    async getCurrentGame(user: User) {
+        // Get All users game
+        const userGames = await this.gameDao.getGamesByUser(user);
+
+        // TODO here we should throw an exception and try to fix if more than one current game
+        // Now if more than one unfinished game return random
+        const unfinishedGames = userGames.filter(game => !game.isFinished());
+        if (unfinishedGames.length > 0) {
+            return unfinishedGames[0];
+        }
+
+        // Order Lastly finished to First finished
+        const games  =_.sortBy(userGames, game => game.endedAt);
+
+        return games[games.length - 1];
+    }
+
+    // If previous games are unfinished, check if possible to finish, and finish them.
+    private async validatePreviousGames(user: User, finishPreviousGames: boolean) {
+        const userGames = await this.gameDao.getGamesByUser(user);
+
+        const unfinishedGames = userGames.filter(game => !game.isFinished());
 
         if(unfinishedGames && unfinishedGames.length > 0) {
             if(!finishPreviousGames ) {
@@ -59,56 +109,83 @@ export class GameService {
                 for (const unfinishedGame of unfinishedGames) {
                     await this.gameDao.finishGame(unfinishedGame, GameResult.Abandoned);
                 }
-
             }
         }
     }
 
-    private getUnfinishedGames(userGames: Game[]) {
-        const openGames: Game[] = [];
-
-        userGames.forEach(game => {
-            if(!game.endedAt) {
-                openGames.push(game);
-            }
-        });
-
-        return openGames;
-    }
-
     private async setInitialAndFinalArticle(game : Game) {
+        let initialArticle;
+        let finalArticle;
+
         switch (GameType[game.gameType].toString()) {
+
             case GameType.Random.toString(): {
-                const initialArticle = await this.articleService.getTodaysFeatureArticle();
-                game.initialArticle = initialArticle;
+                initialArticle = await this.articleService.getTodaysFeatureArticle();
+
+                // Get a random article, until it's different from the initial one
+                do {
+                    finalArticle = await this.articleService.getRandomArticleFromDownloaded();
+                } while (finalArticle.title == initialArticle.title);
+
                 break;
             }
 
-            // case GameType.DailyChallenge: {
-            //
-            //     break;
-            // }
-            //
-            // case GameType.PlayerChallenge: {
-            //     //
-            //     break
-            // }
+            case GameType.Easy.toString(): {
+                initialArticle = await this.articleService.getEasyArticle();
+
+                // Get a random article, until it's different from the initial one
+                do {
+                    finalArticle = await this.articleService.getEasyArticle();
+                } while (finalArticle.title == initialArticle.title);
+
+                break;
+            }
+
             default:
                 throw new Error("GameType not implemented yet");
 
         }
+
+        game.initialArticle = initialArticle;
+        game.finalArticle = finalArticle;
     }
 
-    private getCurrentArticle(game: Game) {
-        if(game.articles && game.articles.length > 0) {
-            return game.articles[game.articles.length - 1];
-        } else {
-            return game.initialArticle;
+    // Get link from db and adecuate it to wikipedia
+    private async getLink(article: Article, linkId : number) {
+        const link = await this.articleService.getLink(article, linkId);
+
+        // The article did not have such link.
+        if(!link) {
+            Logger.log(LogLevels.error, `A non-existent link was requested. Articleid: ${article.id}, Link id: ${linkId}`);
+            throw new Error("Validation Error.");
         }
+
+        // cleaning the link's handle. To make it faster to download we don't process all the wikipedia HTML
+        // TODO move to wikipedia module
+        link.handle = link.handle.replace("/wiki/", "");
+
+        return link;
     }
 
-    private getLink(article: Article, linkId: number) {
-        const linksList = article.links;
-        return linksList.find((link) => link.id == linkId);
+    private milisecondsToHumanReadable(miliseconds: number) {
+        const ms = miliseconds % 1000;
+        miliseconds = (miliseconds - ms) / 1000;
+        const secs = miliseconds % 60;
+        miliseconds = (miliseconds - secs) / 60;
+        const mins = miliseconds % 60;
+        const hrs = (miliseconds - mins) / 60;
+
+        return hrs + ":" + mins + ":" + secs + "." + ms;
+    }
+
+    private getCurrentArticle(game : Game) {
+        let article;
+        if (game.articles && game.articles.length > 0) {
+            article = game.articles[game.articles.length - 1];
+        } else {
+            article = game.initialArticle;
+        }
+
+        return article;
     }
 }

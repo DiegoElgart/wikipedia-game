@@ -1,7 +1,8 @@
 import * as winston from "winston";
 import {LogLevels} from "./LogLevels";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const getNamespace = require("continuation-local-storage").getNamespace;
+import * as continuationLocalStorage from "continuation-local-storage" ;
+
+const getNamespace = continuationLocalStorage.getNamespace;
 
 export class Logger {
     private static instance: winston.Logger;
@@ -10,11 +11,14 @@ export class Logger {
         if(!Logger.instance) {
             Logger.initilizeLogger();
         }
+
         const requestId = getNamespace("my request")?.get("requestId");
         Logger.instance[logLevel]({message: msg, meta: {requestId: requestId}});
     };
 
+    // Initialize and configure Logger
     static initilizeLogger = () => {
+        // Loging format
         const myFormat = winston.format.printf(({ level, message, timestamp, meta }) => {
             const requestId = meta?.requestId ? ` - {requestId:${meta.requestId}}` : "";
             return `${timestamp} - ${level}${requestId}: ${message}`;
@@ -34,9 +38,5 @@ export class Logger {
         };
 
         Logger.instance = winston.createLogger(options);
-
-        if (process.env.NODE_ENV !== "production") {
-            Logger.instance.debug("Logging initialized at debug level");
-        }
     }
 }

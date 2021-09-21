@@ -1,13 +1,14 @@
 import {Express} from "express";
-import {HomeController} from "../home/controller/HomeController";
+import {WebpageController} from "../webpage/controller/WebpageController";
 import {UserController} from "../user/controller/UserController";
 import {GameController} from "../game/controller/GameController";
 import {useExpressServer} from "routing-controllers";
 
-export class Controllers {
-    static initializeEndpoints(app: Express) {
+// TODO configure exceptions, have exceptions
+export class ControllersConfiguration {
+    constructor(app: Express) {
         useExpressServer(app, {
-            controllers: [GameController, HomeController, UserController],
+            controllers: [GameController, WebpageController, UserController],
             classTransformer: true,
             validation: true
         });

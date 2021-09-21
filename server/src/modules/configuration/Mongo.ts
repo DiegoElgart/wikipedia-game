@@ -4,6 +4,7 @@ import bluebird from "bluebird";
 import {Logger} from "../common/util/Logger";
 import {LogLevels} from "../common/util/LogLevels";
 
+// Mongo Configuration
 export class Mongo {
     mongoUrl: string;
     constructor() {

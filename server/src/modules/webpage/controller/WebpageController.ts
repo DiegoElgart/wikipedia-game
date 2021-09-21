@@ -4,10 +4,10 @@ import {Get, JsonController, Req, Res, UseBefore} from "routing-controllers";
 import * as fs from "fs";
 
 @JsonController()
-export class HomeController {
+export class WebpageController {
 
     @Get("/")
-    async getHome(@Req() req: Request, @Res() res: Response) {
+    async getHomePage(@Req() req: Request, @Res() res: Response) {
         return this.getHTMLFile("main");
     }
 
