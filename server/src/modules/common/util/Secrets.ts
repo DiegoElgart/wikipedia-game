@@ -10,6 +10,7 @@ export class Secrets {
     SESSION_SECRET: string;
 
     static instance: Secrets;
+
     static getInstance = () => {
         if(!Secrets.instance) {
             Secrets.instance = new Secrets();
@@ -18,8 +19,9 @@ export class Secrets {
         return Secrets.instance;
     }
 
-    constructor() {
 
+    constructor() {
+        // SETTING DATABASE URL => MONGO_DB_URL
         // set mongo_db password in mongo_db_url
         // we keep them in different files, because .env.secret contains keeps we don't want to push to the repo.
         const MONGO_DB_PASSWORD = process.env.MONGO_DB_PASSWORD;
@@ -32,7 +34,7 @@ export class Secrets {
         }
         this.MONGODB_URI = MONGO_DB_URL;
 
-
+        // SETTING SESSION_SECRET
         // check we have SESSION_SECRET
         this.SESSION_SECRET = process.env["SESSION_SECRET"];
         if (!this.SESSION_SECRET) {

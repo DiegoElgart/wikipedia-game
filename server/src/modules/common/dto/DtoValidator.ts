@@ -1,22 +1,20 @@
-import {plainToClass} from "class-transformer";
-import {validate} from "class-validator";
-import {NextFunction, Request, Response} from "express";
+import {validateSync} from "class-validator";
 import {Dto} from "./Dto";
+import {Logger} from "../util/Logger";
+import {LogLevels} from "../util/LogLevels";
 
-export const validateDto = (dtoType: Dto, req: Request, res: Response, next: NextFunction) => {
-    const dto = plainToClass(dtoType.prototype.constructor, req.body);
-    validate(dto, { skipMissingProperties: true }).then(errors => {
-        if (errors.length > 0) {
-            let errorTexts: any[] = [];
-            for (const errorItem of errors) {
-                errorTexts = errorTexts.concat(errorItem.constraints);
-            }
-            res.status(400).send(errorTexts);
-            return;
-        } else {
-            req.body = dto;
-            req.body.user = req?.session?.passport?.user;
-            next();
+export const validateDto = async (dto:Dto) => {
+    // validate that dto matches annotations
+    const errors = await validateSync(dto, {skipMissingProperties: true});
+
+    if (errors.length > 0) {
+        // Try to return as much information as we have for the error
+        let errorTexts: any[] = [];
+        for (const errorItem of errors) {
+            errorTexts = errorTexts.concat(errorItem.constraints);
         }
-    });
+
+        Logger.log(LogLevels.error, "Error validating dto: " + JSON.stringify(errorTexts));
+        throw new Error("Invalid dto");
+    }
 };

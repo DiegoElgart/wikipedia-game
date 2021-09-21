@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import {Article} from "../../domain/Article";
-
+import * as zlib from "zlib";
 export namespace MongoArticle {
 
     export interface Document extends mongoose.Document {
@@ -9,7 +9,7 @@ export namespace MongoArticle {
         pageId: number
         title: string
         raw: string
-        cleanedHTML: string
+        compressedHTML: mongoose.Types.Buffer
         links: []
     }
 
@@ -19,7 +19,7 @@ export namespace MongoArticle {
             pageId: { type: Number },
             title: { type: String },
             raw: { type: String },
-            cleanedHTML: { type: String },
+            compressedHTML: { type: Buffer },
             links: { type: Array }
         },
         { timestamps: true }
@@ -27,18 +27,19 @@ export namespace MongoArticle {
 
     export const model = mongoose.model<Document>("Article", schema);
 
-    export const getArticles = (articleDocuments: Document[]) => {
-        return articleDocuments.map((articleDocument => getArticle(articleDocument)));
+    export const getArticles = async (articleDocuments: Document[]) => {
+        return Promise.all(articleDocuments.map(async (articleDocument) => await getArticle(articleDocument)));
     };
 
-    export const getArticle = (articleDocument: Document) => {
+    // TODO move this Mongo.get_____ methods to dao
+    export const getArticle = async (articleDocument: Document) => {
         const articleDocumentObject = articleDocument.toObject? articleDocument.toObject(): articleDocument;
         const id = articleDocument._id.toString();
         const handle = articleDocumentObject.handle;
         const pageId = articleDocumentObject.pageId;
         const title = articleDocumentObject.title;
         const raw = articleDocumentObject.raw;
-        const cleanedHTML = articleDocumentObject.cleanedHTML;
+        const cleanedHTML = articleDocumentObject.compressedHTML? await zlib.gunzipSync(articleDocumentObject.compressedHTML.buffer).toString() : undefined;
         const links = articleDocumentObject.links;
         return new Article(id, handle, pageId, title, raw, cleanedHTML, links);
     };
